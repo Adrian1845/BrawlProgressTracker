@@ -12,7 +12,7 @@ elif (base_dir.parent / ".env").exists():
     load_dotenv(dotenv_path=base_dir.parent / ".env")
 
 # Import our driving HTTP router controller
-from app.adapters.driving.http_router import router as player_router
+from backend.adapters.driving.http_router import router as player_router
 
 app = FastAPI(
     title="Brawl Progress Tracker API",

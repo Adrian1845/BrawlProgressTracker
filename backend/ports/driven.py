@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from app.core.models import PlayerDomain
+from backend.core.models import PlayerDomain
 
 class BrawlStarsClientPort(ABC):
     

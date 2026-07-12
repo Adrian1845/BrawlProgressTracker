@@ -1,9 +1,9 @@
  
 from fastapi import APIRouter, Depends
-from app.adapters.driven.supercell_api import SupercellApiAdapter
-from app.ports.driven import BrawlStarsClientPort
-from app.core.services import TrackerAnalyticService
-from app.core.models import PlayerDomain, ProgressionMetrics
+from backend.adapters.driven.supercell_api import SupercellApiAdapter
+from backend.ports.driven import BrawlStarsClientPort
+from backend.core.services import TrackerAnalyticService
+from backend.core.models import PlayerDomain, ProgressionMetrics
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/player", tags=["Player Metrics"])

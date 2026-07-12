@@ -1,5 +1,5 @@
 info:
-  name: Untitled
+  name: GetPlayer
   type: http
   seq: 1
 
@@ -10,10 +10,10 @@ http:
 
 runtime:
   variables:
+    - name: playerTag
+      value: 2PPVPRGP
     - name: hashtag
       value: "%23"
-    - name: playerTag
-      value: 2JOLQLL
 
 settings:
   encodeUrl: true

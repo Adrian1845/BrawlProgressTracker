@@ -1,8 +1,8 @@
 import os
 import httpx
 from fastapi import HTTPException
-from app.ports.driven import BrawlStarsClientPort
-from app.core.models import PlayerDomain
+from backend.ports.driven import BrawlStarsClientPort
+from backend.core.models import PlayerDomain
 
 class SupercellApiAdapter(BrawlStarsClientPort):
     def __init__(self):
@@ -30,8 +30,6 @@ class SupercellApiAdapter(BrawlStarsClientPort):
                 response.raise_for_status()
                 raw_data = response.json()
                 
-                # Thanks to Pydantic field aliases and Config populate_by_name, 
-                # passing the raw JSON dict automatically maps everything into our Domain Model structures
                 return PlayerDomain(**raw_data)
                 
             except httpx.RequestError as exc:

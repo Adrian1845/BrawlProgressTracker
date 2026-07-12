@@ -112,8 +112,11 @@ class ProgressionMetrics(BaseModel):
     # Gold needed to unlock ALL existing gears across all brawlers
     gears_completion: MetricComparison
     
-    # Gold needed to unlock all structural abilities (2 Gadgets + 2 Star Powers per brawler)
-    buffies_completion: MetricComparison
+    # Gold needed to unlock all buffies
+    buffies_gold: MetricComparison
     
+    # PP needed to unlock all buffies
+    buffies_pp: MetricComparison
+
     # Gold needed to buy all existing Hypercharges
     hypercharges_completion: MetricComparison
