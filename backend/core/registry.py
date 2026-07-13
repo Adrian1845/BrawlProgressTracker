@@ -1,17 +1,15 @@
 from typing import Dict, Any
 
-# 1. Standard Default Archetype (Prevents repeating boilerplate code)
 DEFAULT_BRAWLER_ARCHETYPE = {
-    "has_hypercharge": True,         # Most brawlers have or will receive one
+    "has_hypercharge": True,
     "total_gadgets": 2,
     "total_star_powers": 2,
     "total_super_rare_gears": 6,
     "has_epic_gear": False,
     "has_mythic_gear": False,
-    "has_buffies": True              # Enabled as a global mechanics feature
+    "has_buffies": True
 }
 
-# 2. Explicit Game Mechanics Exceptions (Gears & Hypercharge Exclusions)
 MYTHIC_GEAR_OWNERS = {"TICK", "PAM", "GENE", "EVE", "SANDY", "AMBER"}
 EPIC_GEAR_OWNERS = {"EL PRIMO", "JESSIE", "PENNY", "JACKY", "NANI", "BONNIE", "BELLE", "ASH", "LOLA", "TARA", "MR. P", "SPROUT", "LOU", "EVE", "OTIS", "AMBER"}
 NO_HYPERCHARGE_YET = {"BOLT", "STARR NOVA"}
@@ -22,7 +20,6 @@ NO_BUFFIES_YET = {"EL PRIMO", "BARLEY", "POCO", "ROSA", "JESSIE", "DYNAMIKE", "T
                 "OLLIE", "LUMI", "FINX", "JAE-YONG", "ALLI", "MINA", "ZIGGY", "GIGI", "NAJIA", "GLOWY", "STARR NOVA", "DAMIAN", "SANDY", "AMBER", "CHESTER",
                 "CORDELIUS", "KIT", "DRACO", "KENJI", "PIERCE", "KAZE","SIRIUS"}
 
-# 3. Comprehensive Global Game List 
 BRAWLER_MASTER_NAMES = [
     # Trophy Road & Rares
     "SHELLY", "NITA", "COLT", "BULL", "BROCK", "EL PRIMO", "BARLEY", "POCO", "ROSA", 
@@ -39,7 +36,7 @@ BRAWLER_MASTER_NAMES = [
     "LUMI", "FINX", "JAE-YONG", "ALLI", "MINA", "ZIGGY", "GIGI", "NAJIA", "GLOWY", "STARR NOVA", "DAMIAN",
     # Legendaries & Ultra Legendaries
     "SPIKE", "CROW", "LEON", "SANDY", "AMBER", "MEG", "SURGE", "CHESTER", "CORDELIUS", 
-    "KIT", "DRACO", "KENJI", "PIERCE", "KAZE","SIRIUS"
+    "KIT", "DRACO", "KENJI", "PIERCE", "KAZE", "SIRIUS", "NORI"
 ]
 
 def generate_brawler_registry() -> Dict[str, Dict[str, Any]]:
@@ -69,5 +66,4 @@ def generate_brawler_registry() -> Dict[str, Dict[str, Any]]:
         
     return registry
 
-# Single instance exposure to mirror your previous dictionary export directly
 BRAWLER_REGISTRY_OVERRIDES = generate_brawler_registry()

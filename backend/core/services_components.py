@@ -1,9 +1,9 @@
-from backend.core.constants import (
+from core.constants import (
     GOLD_UPGRADE_COSTS, PP_UPGRADE_COSTS,
     GADGET_GOLD_COST, STAR_POWER_GOLD_COST, SUPER_RARE_GEAR_GOLD_COST, EPIC_GEAR_GOLD_COST,
     MYTHIC_GEAR_GOLD_COST, HYPERCHARGE_GOLD_COST, BUFFIE_GOLD_COST, BUFFIE_PP_COST
 )
-from backend.core.models import MetricComparison
+from core.models import MetricComparison
 
 def build_comparison(current: int, total: int) -> MetricComparison:
             amount_leftover = max(0, total - current)

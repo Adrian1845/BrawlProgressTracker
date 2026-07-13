@@ -1,17 +1,15 @@
 import os
 import httpx
 from fastapi import HTTPException
-from backend.ports.driven import BrawlStarsClientPort
-from backend.core.models import PlayerDomain
+from ports.driven import BrawlStarsClientPort
+from core.models import PlayerDomain
 
 class SupercellApiAdapter(BrawlStarsClientPort):
     def __init__(self):
         self.base_url = "https://api.brawlstars.com/v1"
-        # Fallback to empty string if not loaded yet to prevent crashing on initialization
         self.token = os.getenv("BRAWL_STARS_TOKEN", "")
 
     async def fetch_player_by_tag(self, tag: str) -> PlayerDomain:
-        # Reconstruct the exact URL structure required by Supercell using the encoded hashtag (%23)
         url = f"{self.base_url}/players/%23{tag}"
         headers = {
             "Authorization": f"Bearer {self.token}",
@@ -23,7 +21,7 @@ class SupercellApiAdapter(BrawlStarsClientPort):
                 response = await client.get(url, headers=headers, timeout=10.0)
                 
                 if response.status_code == 404:
-                    raise HTTPException(status_code=404, detail=f"Player tag #{tag} not found on Supercell servers.")
+                    raise HTTPException(status_code=404, detail="Player tag not found.")
                 elif response.status_code == 403:
                     raise HTTPException(status_code=403, detail="Authentication failed with Supercell API. Verify token or Whitelisted IP.")
                 

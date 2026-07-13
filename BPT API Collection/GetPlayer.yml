@@ -5,15 +5,13 @@ info:
 
 http:
   method: GET
-  url: http://127.0.0.1:8000/api/player/{{hashtag}}{{playerTag}}
+  url: http://127.0.0.1:8000/api/player/{{playerTag}}
   auth: inherit
 
 runtime:
   variables:
     - name: playerTag
       value: 2PPVPRGP
-    - name: hashtag
-      value: "%23"
 
 settings:
   encodeUrl: true

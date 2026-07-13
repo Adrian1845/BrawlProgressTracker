@@ -1,8 +1,8 @@
 
-from backend.core.models import PlayerDomain, ProgressionMetrics
-from backend.core.constants import TOTAL_GOLD_TO_MAX_LEVEL, TOTAL_PP_TO_MAX_LEVEL
-from backend.core.registry import BRAWLER_REGISTRY_OVERRIDES, DEFAULT_BRAWLER_ARCHETYPE
-from backend.core.services_components import (
+from core.models import PlayerDomain, ProgressionMetrics
+from core.constants import TOTAL_GOLD_TO_MAX_LEVEL, TOTAL_PP_TO_MAX_LEVEL
+from core.registry import BRAWLER_REGISTRY_OVERRIDES, DEFAULT_BRAWLER_ARCHETYPE
+from core.services_components import (
     build_comparison, PowerLevelCalculator, AbilitiesCalculator, BuffiesCalculator, GearsCalculator, HyperchargeCalculator
 )
 
