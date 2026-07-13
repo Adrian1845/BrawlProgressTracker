@@ -1,0 +1,9 @@
+{
+  "name": "brawl-progress-tracker-workspace",
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "cd backend && ./venv/Scripts/python.exe -m uvicorn main:app --reload --port 8000",
+    "dev:frontend": "cd frontend && bun run dev",
+    "dev": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\""
+  }
+}
