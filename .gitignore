@@ -1,0 +1,22 @@
+
+# Dependency directories
+node_modules/
+.astro/
+dist/
+
+# Python environment & caches
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Local environment variables
+.env
+.env.local
+commands.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+"@
+

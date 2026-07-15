@@ -1,0 +1,123 @@
+---
+interface Props {
+  searchTag: string;
+  errorMessage?: string;
+}
+const { searchTag, errorMessage } = Astro.props;
+---
+<div class="search-card">
+  <form id="search-form" onsubmit="return false;">
+    <label for="tag">ENTER PLAYER TAG</label>
+    <div class="form-group">
+      <input 
+        type="text" 
+        id="tag" 
+        placeholder="e.g. QJY2R0V" 
+        value={searchTag ? `#${searchTag}` : ""} 
+        required 
+      />
+      <button type="button" id="search-btn">SEARCH</button>
+    </div>
+  </form>
+  {errorMessage && <div class="error-banner">{errorMessage}</div>}
+</div>
+
+<script>
+  const searchBtn = document.getElementById('search-btn');
+  const input = document.getElementById('tag') as HTMLInputElement;
+
+  function executeSearch() {
+    if (!input) return;
+    
+    // Convert to uppercase and trim spaces
+    let value = input.value.trim().toUpperCase();
+    
+    // Strip leading hashes cleanly
+    if (value.startsWith('#')) {
+      value = value.slice(1);
+    }
+    
+    // Supercell Font Correction Matrix (Replaces common font mistranslations)
+    value = value.replace(/O/g, '0');
+    value = value.replace(/I/g, '1');
+    value = value.replace(/S/g, '5');
+    value = value.replace(/Z/g, '2');
+    
+    if (value) {
+      window.location.href = `/?tag=${encodeURIComponent(value)}`;
+    }
+  }
+
+  searchBtn?.addEventListener('click', executeSearch);
+  input?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeSearch();
+    }
+  });
+</script>
+
+<style>
+  .search-card {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid #2a2e37;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 500px;
+    box-sizing: border-box;
+  }
+  label {
+    display: block;
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .form-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+  input[type="text"] {
+    flex: 1;
+    background: #101216;
+    border: 2px solid #2a2e37;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: white;
+    font-size: 1rem;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  button {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  button:hover {
+    background: var(--accent-hover);
+  }
+  .error-banner {
+    background: rgba(255, 74, 74, 0.1);
+    border: 1px solid var(--error);
+    color: var(--error);
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+</style>

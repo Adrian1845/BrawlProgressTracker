@@ -1,0 +1,135 @@
+---
+interface MetricData {
+  current: number;
+  total_needed_for_max: number;
+  leftover_needed: number;
+  percentage_completed: number;
+}
+
+interface Props {
+  title: string;
+  metric: MetricData;
+  iconSrc: string;
+  iconAlt: string;
+  barClass: "gold-bar" | "pp-bar" | "gear-bar" | "hypercharge-bar";
+  textClass: "text-gold" | "text-purple" | "text-teal" | "text-pink";
+  investedLabel?: string;
+}
+
+const { 
+  title, 
+  metric, 
+  iconSrc, 
+  iconAlt, 
+  barClass, 
+  textClass, 
+  investedLabel = "Invested:" 
+} = Astro.props;
+---
+
+<div class="metric-block">
+  <h3>{title}</h3>
+  <div class="metrics-progress-wrapper">
+    <div class="metrics-stats">
+      <div>
+        <span class="label">{investedLabel}</span>
+        <span class={`value ${textClass}`}>
+          {metric.current.toLocaleString()} 
+          <img src={iconSrc} class="asset-icon-mini" alt={iconAlt} onerror="this.style.display='none'" />
+        </span>
+      </div>
+      <div>
+        <span class="label">Remaining to Max:</span>
+        <span class="value text-needed">
+          {metric.leftover_needed.toLocaleString()} 
+          <img src={iconSrc} class="asset-icon-mini" alt={`${iconAlt} Needed`} onerror="this.style.display='none'" />
+        </span>
+      </div>
+      <div>
+        <span class="label">Completed:</span>
+        <span class="value">{metric.percentage_completed}%</span>
+      </div>
+    </div>
+    <div class="progress-bar-container large">
+      <div class="progress-bar" class:list={[barClass]} style={`width: ${metric.percentage_completed}%`}></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .metric-block {
+    margin-bottom: 2rem;
+  }
+  
+  .metric-block:last-child {
+    margin-bottom: 0;
+  }
+
+  .metric-block h3 {
+    margin: 0 0 0.75rem 0;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .metrics-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .metrics-stats .label { 
+    color: #888; 
+    display: block; 
+    font-size: 0.85rem; 
+  }
+
+  .metrics-stats .value { 
+    font-size: 1.2rem; 
+    font-weight: bold; 
+    color: #fff; 
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Color presets for text */
+  .text-gold { color: #fec325; }
+  .text-purple { color: #cc8ef5; }
+  .text-teal { color: #3be2b0; }
+  .text-pink { color: #ff5eb4; }
+  .text-needed { color: #ff4a4a; }
+
+  /* Progress Bar styling */
+  .progress-bar-container { 
+    background: #101216; 
+    height: 5px; 
+    border-radius: 3px; 
+    width: 100%; 
+    overflow: hidden; 
+  }
+  
+  .progress-bar-container.large { 
+    height: 10px; 
+    border-radius: 5px; 
+  }
+  
+  .progress-bar { 
+    height: 100%; 
+    transition: width 0.3s ease; 
+  }
+  
+  /* Color presets for progress bars */
+  .gold-bar { background: linear-gradient(90deg, #fec325, #ff9f43); }
+  .pp-bar { background: linear-gradient(90deg, #b066fe, #cc8ef5); }
+  .gear-bar { background: linear-gradient(90deg, #1abc9c, #3be2b0); }
+  .hypercharge-bar { background: linear-gradient(90deg, #ff4a9f, #ff5eb4); }
+
+  .asset-icon-mini {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+</style>
