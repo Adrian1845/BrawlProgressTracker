@@ -1,50 +1,567 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import SearchForm from '../components/SearchForm.astro';
-import PlayerResults from '../components/PlayerResults.astro';
 import { API_BASE_URL } from '../config';
 
-let playerData = null;
-let errorMessage = "";
-
-const rawTag = Astro.url.searchParams.get("tag")?.trim() || "";
-const searchTag = rawTag.startsWith("#") ? rawTag.slice(1) : rawTag;
-
-if (searchTag) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/player/${searchTag}`);
-    
-    if (!response.ok) {
-      errorMessage = response.status === 404 
-        ? `Player tag #${searchTag} not found.` 
-        : "Failed to communicate with the backend tracker engine.";
-    } else {
-      playerData = await response.json();
-    }
-  } catch (error) {
-    errorMessage = "An unexpected connection error occurred.";
-    console.error(error);
-  }
-}
+const apiBaseUrl = API_BASE_URL;
 ---
 
 <Layout title="Brawl Progress Tracker">
-  <main class="page-shell">
+  <main class="page-shell tracker-shell">
     <header class="page-hero">
       <h1>Brawl Tracker</h1>
       <p>Progression Analyst</p>
     </header>
 
-    <SearchForm searchTag={searchTag} errorMessage={errorMessage} />
+    <SearchForm />
 
-    {playerData && <PlayerResults data={playerData} />}
+    <p class="status-banner" id="status-banner" role="status" aria-live="polite">
+      Enter a player tag to load progression data.
+    </p>
+
+    <section id="results-root" class="results-root" aria-live="polite" aria-busy="false">
+      <div class="empty-state">
+        Search a tag to view the player profile, progression metrics, and brawler catalog.
+      </div>
+    </section>
   </main>
 </Layout>
 
+<script is:inline define:vars={{ apiBaseUrl }}>
+  const searchForm = document.getElementById('search-form');
+  const tagInput = document.getElementById('tag');
+  const searchButton = document.getElementById('search-btn');
+  const errorBanner = document.getElementById('error-banner');
+  const statusBanner = document.getElementById('status-banner');
+  const resultsRoot = document.getElementById('results-root');
+
+  const escapeHtml = (value) =>
+    String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+
+  const normalizeTag = (value) =>
+    String(value ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/^#/, '')
+      .replaceAll('O', '0');
+
+  const formatNumber = (value) => Number(value ?? 0).toLocaleString();
+
+  const toColor = (value, fallback = '#ffffff') => {
+    if (!value || typeof value !== 'string') return fallback;
+
+    return value.replace(/^0xff/i, '#');
+  };
+
+  const profileIconSrc = (profile) =>
+    profile?.icon?.id ? `/assets/profile/icons/${profile.icon.id}.png` : '/assets/profile/icons/Unknown.png';
+
+  const rankedBadgeSrc = (profile) => {
+    if (typeof profile?.rankedRank === 'number') {
+      return `/assets/profile/ranked/tiered/${58000000 + profile.rankedRank - 1}.png`;
+    }
+
+    return '/assets/profile/ranked/regular/Pro.png';
+  };
+
+  const rankedBadgeFallback = (profile) => {
+    const fallbackName = profile?.rankedRankName?.split(' ')?.[0];
+    return fallbackName
+      ? `/assets/profile/ranked/regular/${fallbackName}.png`
+      : '/assets/profile/ranked/regular/Pro.png';
+  };
+
+  const metricRow = ({ label, value, left, percent, iconSrc, barClass, iconAlt }) => {
+    const icon = iconSrc
+      ? `<img src="${iconSrc}" class="asset-icon-mini" alt="${escapeHtml(iconAlt)}" />`
+      : '';
+
+    return `
+      <div class="group-row">
+        <div class="row-head">
+          <span class="row-label">${escapeHtml(label)}</span>
+          <span class="row-value">${formatNumber(value)}${icon}</span>
+        </div>
+        <div class="row-meta">
+          <span class="row-subtle">${formatNumber(left)} left${iconSrc ? `<img src="${iconSrc}" class="asset-icon-mini subtle-icon" alt="${escapeHtml(iconAlt)} needed" />` : ''}</span>
+          <span class="row-subtle">${percent}% complete</span>
+        </div>
+        <div class="progress-bar-container large">
+          <div class="progress-bar ${barClass}" style="width: ${percent}%"></div>
+        </div>
+      </div>
+    `;
+  };
+
+  const renderMetricGroup = (title, metric, labels = {}) => {
+    if (!metric) return '';
+
+    const rows = [];
+
+    if (metric.count) {
+      rows.push(`
+        <div class="group-row group-row-count">
+          <div class="row-head">
+            <span class="row-label">${escapeHtml(labels.countLabel ?? 'Count')}</span>
+            <span class="row-value">${formatNumber(metric.count.current)} / ${formatNumber(metric.count.total_needed_for_max)}</span>
+          </div>
+          <div class="row-meta">
+            <span class="row-subtle">${formatNumber(metric.count.leftover_needed)} left</span>
+            <span class="row-subtle">${metric.count.percentage_completed}% complete</span>
+          </div>
+          <div class="progress-bar-container large">
+            <div class="progress-bar count-bar" style="width: ${metric.count.percentage_completed}%"></div>
+          </div>
+        </div>
+      `);
+    }
+
+    if (metric.gold) {
+      rows.push(metricRow({
+        label: labels.goldLabel ?? 'Gold',
+        value: metric.gold.current,
+        left: metric.gold.leftover_needed,
+        percent: metric.gold.percentage_completed,
+        iconSrc: '/assets/UI/gold.png',
+        barClass: 'gold-bar',
+        iconAlt: 'Gold'
+      }));
+    }
+
+    if (metric.pp) {
+      rows.push(metricRow({
+        label: labels.ppLabel ?? 'Power Points',
+        value: metric.pp.current,
+        left: metric.pp.leftover_needed,
+        percent: metric.pp.percentage_completed,
+        iconSrc: '/assets/UI/power-point.png',
+        barClass: 'pp-bar',
+        iconAlt: 'Power Points'
+      }));
+    }
+
+    if (!rows.length) return '';
+
+    return `
+      <section class="group-card">
+        <h3>${escapeHtml(title)}</h3>
+        <div class="group-stack">
+          ${rows.join('')}
+        </div>
+      </section>
+    `;
+  };
+
+  const renderBrawlerCard = (brawler, index) => `
+    <div
+      class="brawler-card"
+      data-brawler-card
+      data-name="${escapeHtml(String(brawler.name ?? '').toLowerCase())}"
+      data-power="${Number(brawler.power ?? 0)}"
+      data-trophies="${Number(brawler.trophies ?? 0)}"
+      data-rank="${Number(brawler.rank ?? 0)}"
+      data-original-index="${index}"
+    >
+      <div class="brawler-header">
+        <img
+          src="/assets/brawlers/${brawler.id}.png"
+          class="brawler-avatar"
+          alt="${escapeHtml(brawler.name)}"
+          loading="lazy"
+          data-fallback="https://cdn.brawlify.com/brawlers/borderless/${brawler.id}.png"
+        />
+        <div class="brawler-title-group">
+          <span class="brawler-name">${escapeHtml(brawler.name)}</span>
+          <span class="brawler-power">Power ${Number(brawler.power ?? 0)}</span>
+        </div>
+        <span class="brawler-rank">R ${Number(brawler.rank ?? 0)}</span>
+      </div>
+      <div class="brawler-stats">
+        <div class="stat">
+          <img src="/assets/UI/trophy.png" class="asset-icon-mini" alt="Trophies" />
+          <span class="brawler-trophies">${formatNumber(brawler.trophies)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const renderCatalog = (brawlers) => `
+    <section class="brawlers-section">
+      <div class="section-title-wrapper">
+        <div class="section-title-copy">
+          <h3>Brawlers Catalog</h3>
+          <span class="count-tag" id="brawler-count">${brawlers.length} Unlocked</span>
+        </div>
+        <div class="catalog-controls" aria-label="Brawler catalog filters">
+          <label class="filter-label" for="brawler-search">Search</label>
+          <input
+            id="brawler-search"
+            class="catalog-input"
+            type="search"
+            placeholder="Search brawlers"
+            autocomplete="off"
+          />
+          <label class="filter-label" for="brawler-sort">Sort by</label>
+          <select id="brawler-sort" class="catalog-select" aria-label="Sort brawlers">
+            <option value="trophies">Trophies</option>
+            <option value="power">Power</option>
+            <option value="rank">Rank</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="catalog-empty" id="brawler-empty" hidden>No brawlers match your search.</p>
+
+      <div class="brawlers-grid" id="brawlers-grid">
+        ${brawlers.map((brawler, index) => renderBrawlerCard(brawler, index)).join('')}
+      </div>
+    </section>
+  `;
+
+  const renderResults = (data) => {
+    const profile = data?.profile;
+    const metrics = data?.metrics_v2;
+
+    if (!profile || !metrics) {
+      resultsRoot.innerHTML = `
+        <div class="empty-state">
+          The backend returned an incomplete player payload.
+        </div>
+      `;
+      return;
+    }
+
+    const brawlers = [...(profile.brawlers ?? [])].sort((a, b) => Number(b.trophies ?? 0) - Number(a.trophies ?? 0));
+    const borderColor = toColor(profile.nameColor, '#2a2e37');
+    const titleColor = toColor(profile.nameColor, '#ffffff');
+    const rankText = profile.rankedRankName ?? 'Unranked';
+    const rankedElo = formatNumber(profile.rankedElo ?? 0);
+
+    resultsRoot.innerHTML = `
+      <div class="results-container">
+        <header class="profile-header" style="border-color: ${borderColor}">
+          <div class="avatar-stub">
+            <img
+              src="${profileIconSrc(profile)}"
+              class="profile-icon"
+              alt="${escapeHtml(profile.name)} profile icon"
+              loading="eager"
+              data-fallback="/assets/profile/icons/Unknown.png"
+            />
+          </div>
+          <div class="profile-title">
+            <h2 style="color: ${titleColor}">${escapeHtml(profile.name)}</h2>
+            <div class="sub-badges">
+              <span class="player-tag">${escapeHtml(profile.tag)}</span>
+              ${profile.club?.name ? `<span class="club-badge">🦎 ${escapeHtml(profile.club.name)}</span>` : ''}
+            </div>
+          </div>
+          <div class="rank-badge">
+            <span class="lbl">COMPETITIVE</span>
+            <div class="rank-badge-row">
+              <img
+                src="${rankedBadgeSrc(profile)}"
+                class="rank-icon"
+                alt="${escapeHtml(rankText)} badge"
+                data-fallback="${rankedBadgeFallback(profile)}"
+              />
+              <div class="rank-badge-copy">
+                <span class="val ranked-text">${escapeHtml(rankText)}</span>
+                <span class="elo">${rankedElo} ELO</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <section class="progression-grid">
+          ${renderMetricGroup('Max Level', metrics.max_level, {
+            goldLabel: 'Gold to Max',
+            ppLabel: 'Power Points to Max'
+          })}
+          ${renderMetricGroup('Power 11', metrics.power_11, {
+            countLabel: 'Power 11 Brawlers',
+            goldLabel: 'Gold Invested',
+            ppLabel: 'Power Points Invested'
+          })}
+          ${renderMetricGroup('Gadgets', metrics.gadgets, {
+            countLabel: 'Gadgets Owned',
+            goldLabel: 'Gold Invested'
+          })}
+          ${renderMetricGroup('Star Powers', metrics.star_powers, {
+            countLabel: 'Star Powers Owned',
+            goldLabel: 'Gold Invested'
+          })}
+          ${renderMetricGroup('Gears', metrics.gears, {
+            countLabel: 'Gears Owned',
+            goldLabel: 'Gold Invested'
+          })}
+          ${renderMetricGroup('Buffies', metrics.buffies, {
+            countLabel: 'Buffies Owned',
+            goldLabel: 'Gold Invested',
+            ppLabel: 'Power Points Invested'
+          })}
+          ${renderMetricGroup('Hypercharges', metrics.hypercharges, {
+            countLabel: 'Hypercharges Owned',
+            goldLabel: 'Gold Invested'
+          })}
+        </section>
+
+        <section class="stats-grid">
+          <div class="stat-card">
+            <img src="/assets/UI/trophy.png" class="asset-icon-card" alt="Trophies" />
+            <div class="stat-info">
+              <span class="stat-label">Current Trophies</span>
+              <span class="stat-value">${formatNumber(profile.trophies)}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">🔥</span>
+            <div class="stat-info">
+              <span class="stat-label">Trophy Record</span>
+              <span class="stat-value">${formatNumber(profile.highestTrophies)}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">⚔️</span>
+            <div class="stat-info">
+              <span class="stat-label">3vs3 Victories</span>
+              <span class="stat-value">${formatNumber(profile['3vs3Victories'])}</span>
+            </div>
+          </div>
+        </section>
+
+        ${renderCatalog(brawlers)}
+      </div>
+    `;
+
+    resultsRoot.querySelectorAll('img[data-fallback]').forEach((img) => {
+      img.addEventListener('error', () => {
+        const fallback = img.dataset.fallback;
+        if (fallback && img.src !== fallback) {
+          img.src = fallback;
+        }
+      });
+    });
+
+    const searchInput = document.getElementById('brawler-search');
+    const sortSelect = document.getElementById('brawler-sort');
+    const grid = document.getElementById('brawlers-grid');
+    const countTag = document.getElementById('brawler-count');
+    const emptyState = document.getElementById('brawler-empty');
+
+    if (!searchInput || !sortSelect || !grid || !countTag || !emptyState) {
+      return;
+    }
+
+    const cards = Array.from(grid.querySelectorAll('[data-brawler-card]'));
+
+    const sortFns = {
+      trophies: (card) => Number(card.dataset.trophies ?? 0),
+      power: (card) => Number(card.dataset.power ?? 0),
+      rank: (card) => Number(card.dataset.rank ?? 0)
+    };
+
+    const renderCards = () => {
+      const query = searchInput.value.trim().toLowerCase();
+      const sortBy = sortSelect.value;
+
+      const visibleCards = cards.filter((card) => {
+        const name = card.dataset.name ?? '';
+        const matchesQuery = !query || name.includes(query);
+        card.hidden = !matchesQuery;
+        card.classList.toggle('is-hidden', !matchesQuery);
+        return matchesQuery;
+      });
+
+      visibleCards.sort((a, b) => {
+        const aValue = sortFns[sortBy](a);
+        const bValue = sortFns[sortBy](b);
+
+        if (bValue !== aValue) {
+          return bValue - aValue;
+        }
+
+        return Number(a.dataset.originalIndex ?? 0) - Number(b.dataset.originalIndex ?? 0);
+      });
+
+      visibleCards.forEach((card) => grid.appendChild(card));
+      countTag.textContent =
+        visibleCards.length === cards.length
+          ? `${cards.length} Unlocked`
+          : `${visibleCards.length} / ${cards.length} Shown`;
+      emptyState.hidden = visibleCards.length > 0;
+    };
+
+    searchInput.addEventListener('input', renderCards);
+    sortSelect.addEventListener('change', renderCards);
+    renderCards();
+  };
+
+  const setError = (message) => {
+    if (!errorBanner) return;
+
+    if (message) {
+      errorBanner.textContent = message;
+      errorBanner.hidden = false;
+    } else {
+      errorBanner.textContent = '';
+      errorBanner.hidden = true;
+    }
+  };
+
+  const setStatus = (message) => {
+    if (!statusBanner) return;
+    statusBanner.textContent = message;
+  };
+
+  const setBusy = (isBusy) => {
+    if (resultsRoot) {
+      resultsRoot.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+    }
+
+    if (searchButton) {
+      searchButton.disabled = isBusy;
+    }
+  };
+
+  let activeRequest = 0;
+  let activeController = null;
+
+  const loadPlayer = async (rawTag, { updateUrl = true } = {}) => {
+    const tag = normalizeTag(rawTag);
+
+    if (!tag) {
+      setError('Enter a player tag before searching.');
+      setStatus('Waiting for a player tag.');
+      resultsRoot.innerHTML = `
+        <div class="empty-state">
+          Search a tag to view the player profile, progression metrics, and brawler catalog.
+        </div>
+      `;
+      if (tagInput) tagInput.value = '';
+      if (updateUrl) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('tag');
+        window.history.replaceState({}, '', url);
+      }
+      return;
+    }
+
+    if (activeController) {
+      activeController.abort();
+    }
+
+    const requestId = ++activeRequest;
+    const controller = new AbortController();
+    activeController = controller;
+
+    setError('');
+    setStatus(`Loading player #${tag}...`);
+    setBusy(true);
+
+    if (tagInput) {
+      tagInput.value = tag;
+    }
+
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tag', tag);
+      window.history.replaceState({}, '', url);
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/player/${encodeURIComponent(tag)}`, {
+        signal: controller.signal
+      });
+
+      if (requestId !== activeRequest) {
+        return;
+      }
+
+      if (!response.ok) {
+        const message = response.status === 404
+          ? `Player tag #${tag} not found.`
+          : 'Failed to communicate with the backend tracker engine.';
+
+        setError(message);
+        setStatus(message);
+        resultsRoot.innerHTML = `
+          <div class="empty-state">
+            ${escapeHtml(message)}
+          </div>
+        `;
+        return;
+      }
+
+      const data = await response.json();
+      if (requestId !== activeRequest) {
+        return;
+      }
+
+      setError('');
+      setStatus(`Showing results for #${tag}.`);
+      renderResults(data);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      console.error(error);
+      setError('An unexpected connection error occurred.');
+      setStatus('Unable to load the requested player.');
+      resultsRoot.innerHTML = `
+        <div class="empty-state">
+          An unexpected connection error occurred.
+        </div>
+      `;
+    } finally {
+      if (requestId === activeRequest) {
+        setBusy(false);
+      }
+    }
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    loadPlayer(tagInput?.value ?? '');
+  };
+
+  const init = () => {
+    if (searchForm) {
+      searchForm.addEventListener('submit', handleSubmit);
+    }
+
+    const initialTag = new URL(window.location.href).searchParams.get('tag');
+    if (initialTag) {
+      loadPlayer(initialTag, { updateUrl: false });
+      return;
+    }
+
+    if (tagInput) {
+      tagInput.focus();
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+</script>
+
 <style>
+  .tracker-shell {
+    align-items: stretch;
+  }
+
   .page-hero {
     text-align: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
   }
 
   .page-hero h1 {
@@ -58,5 +575,535 @@ if (searchTag) {
   .page-hero p {
     color: var(--text-muted);
     margin: 0.5rem 0 0;
+  }
+
+  .status-banner {
+    width: min(100%, 640px);
+    margin: 0 auto;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  .results-root {
+    width: 100%;
+  }
+
+  .empty-state {
+    width: min(100%, 640px);
+    margin: 0 auto;
+    background: rgba(26, 29, 36, 0.8);
+    border: 1px solid #2a2e37;
+    border-radius: 16px;
+    padding: 1.5rem;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .results-container {
+    width: 100%;
+    max-width: 1360px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeIn 0.25s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .profile-header {
+    background: #1b1f27;
+    border: 2px solid #2a2e37;
+    padding: 1.5rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .avatar-stub {
+    background: #101216;
+    padding: 0.5rem;
+    border-radius: 12px;
+    width: 72px;
+    height: 72px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+
+  .profile-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .profile-title h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.8rem;
+  }
+
+  .sub-badges {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .player-tag {
+    color: #888;
+    font-family: monospace;
+  }
+
+  .club-badge {
+    background: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
+
+  .rank-badge {
+    margin-left: auto;
+    background: #101216;
+    border: 1px solid #2a2e37;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+  }
+
+  .rank-badge .lbl {
+    font-size: 0.65rem;
+    color: #888;
+  }
+
+  .rank-badge .val {
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
+
+  .rank-badge .elo {
+    font-size: 0.8rem;
+    color: #fec325;
+    font-weight: bold;
+  }
+
+  .ranked-text {
+    color: #e03e3e;
+  }
+
+  .rank-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .rank-icon {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    flex: none;
+  }
+
+  .rank-badge-copy {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .progression-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .group-card {
+    background: #1b1f27;
+    border: 1px solid #2a2e37;
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .group-card h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    border-left: 4px solid #fec325;
+    padding-left: 0.5rem;
+  }
+
+  .group-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .group-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .row-head,
+  .row-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .row-label {
+    color: #8a8f98;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .row-value {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .row-subtle {
+    color: #8a8f98;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .progress-bar-container {
+    background: #101216;
+    height: 6px;
+    border-radius: 999px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .progress-bar-container.large {
+    height: 10px;
+  }
+
+  .progress-bar {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .count-bar {
+    background: linear-gradient(90deg, #607d8b, #90a4ae);
+  }
+
+  .gold-bar {
+    background: linear-gradient(90deg, #fec325, #ff9f43);
+  }
+
+  .pp-bar {
+    background: linear-gradient(90deg, #b066fe, #cc8ef5);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .stat-card {
+    background: #1b1f27;
+    border: 1px solid #2a2e37;
+    padding: 1.25rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .stat-icon {
+    font-size: 1.8rem;
+  }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: #888;
+  }
+
+  .stat-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #fff;
+  }
+
+  .asset-icon-card {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+  }
+
+  .brawlers-section {
+    margin-top: 1rem;
+  }
+
+  .section-title-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .section-title-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .brawlers-section h3 {
+    color: #fff;
+    font-size: 1.3rem;
+    margin: 0;
+    border-left: 4px solid #fec325;
+    padding-left: 0.5rem;
+  }
+
+  .count-tag {
+    background: #2a2e37;
+    color: #eee;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+  }
+
+  .catalog-controls {
+    display: grid;
+    grid-template-columns: auto minmax(180px, 240px) auto minmax(160px, 180px);
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .filter-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .catalog-input,
+  .catalog-select {
+    width: 100%;
+    background: #101216;
+    border: 1px solid #2a2e37;
+    color: #fff;
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.95rem;
+  }
+
+  .catalog-input:focus,
+  .catalog-select:focus {
+    outline: none;
+    border-color: #fec325;
+    box-shadow: 0 0 0 3px rgba(254, 195, 37, 0.15);
+  }
+
+  .catalog-empty {
+    margin: 0 0 0.85rem 0;
+    color: #888;
+    font-size: 0.95rem;
+  }
+
+  .brawlers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .brawler-card {
+    background: #1b1f27;
+    border: 1px solid #2a2e37;
+    border-radius: 12px;
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .brawler-card.is-hidden {
+    display: none;
+  }
+
+  .brawler-card:hover {
+    border-color: #fec325;
+  }
+
+  .brawler-card:hover .brawler-avatar {
+    transform: scale(1.05);
+    border-color: #fec325;
+  }
+
+  .brawler-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .brawler-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: #101216;
+    border: 2px solid #2a2e37;
+    object-fit: cover;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .brawler-title-group {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .brawler-name {
+    font-weight: bold;
+    color: #fff;
+    font-size: 1rem;
+  }
+
+  .brawler-power {
+    font-size: 0.75rem;
+    color: #888;
+  }
+
+  .brawler-rank {
+    font-size: 0.75rem;
+    background: #e03e3e;
+    color: #fff;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+
+  .brawler-stats {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .brawler-trophies {
+    color: #fec325;
+    font-weight: bold;
+  }
+
+  .asset-icon-mini {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+  }
+
+  .subtle-icon {
+    opacity: 0.8;
+  }
+
+  @media (max-width: 900px) {
+    .results-container {
+      margin: 1rem auto 0;
+    }
+
+    .profile-header {
+      padding: 1rem;
+      gap: 1rem;
+    }
+
+    .profile-title h2 {
+      font-size: 1.45rem;
+    }
+
+    .rank-badge {
+      margin-left: 0;
+      width: 100%;
+    }
+
+    .rank-badge-row {
+      width: 100%;
+    }
+
+    .progression-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .section-title-wrapper {
+      align-items: stretch;
+    }
+
+    .catalog-controls {
+      grid-template-columns: 1fr;
+      max-width: none;
+    }
+
+    .brawlers-grid {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+  }
+
+  @media (min-width: 1600px) {
+    .progression-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .catalog-controls {
+      max-width: 780px;
+    }
+
+    .brawlers-grid {
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
   }
 </style>

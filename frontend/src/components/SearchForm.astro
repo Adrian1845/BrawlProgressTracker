@@ -1,59 +1,21 @@
 ---
-interface Props {
-  searchTag: string;
-  errorMessage?: string;
-}
-const { searchTag, errorMessage } = Astro.props;
 ---
 <div class="search-card">
-  <form id="search-form" onsubmit="return false;">
+  <form id="search-form">
     <label for="tag">ENTER PLAYER TAG</label>
     <div class="form-group">
       <input 
         type="text" 
         id="tag" 
         placeholder="e.g. QJY2R0V" 
-        value={searchTag ? `#${searchTag}` : ""} 
         required
         maxlength="10"
       />
-      <button type="button" id="search-btn">SEARCH</button>
+      <button type="submit" id="search-btn">SEARCH</button>
     </div>
   </form>
-  {errorMessage && <div class="error-banner">{errorMessage}</div>}
+  <div class="error-banner" id="error-banner" hidden></div>
 </div>
-
-<script>
-  const searchBtn = document.getElementById('search-btn');
-  const input = document.getElementById('tag') as HTMLInputElement;
-
-  function executeSearch() {
-    if (!input) return;
-    
-    // Convert to uppercase and trim spaces
-    let value = input.value.trim().toUpperCase();
-    
-    // Strip leading hashes cleanly
-    if (value.startsWith('#')) {
-      value = value.slice(1);
-    }
-    
-    // Supercell Font Correction Matrix (Replaces common font mistranslations)
-    value = value.replace(/O/g, '0');
-    
-    if (value) {
-      window.location.href = `/?tag=${encodeURIComponent(value)}`;
-    }
-  }
-
-  searchBtn?.addEventListener('click', executeSearch);
-  input?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      executeSearch();
-    }
-  });
-</script>
 
 <style>
   .search-card {
