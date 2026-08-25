@@ -1,0 +1,66 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+  class?: string;
+  loading?: 'lazy' | 'eager';
+  width?: number | string;
+  height?: number | string;
+  decoding?: 'async' | 'auto' | 'sync';
+  fallbackSrc?: string;
+  hideOnError?: boolean;
+}
+
+const {
+  src,
+  alt,
+  fallbackSrc,
+  hideOnError = true,
+  ...imgProps
+} = Astro.props as Props;
+---
+
+<img
+  {...imgProps}
+  src={src}
+  alt={alt}
+  data-asset-image="true"
+  data-fallback-src={fallbackSrc}
+  data-hide-on-error={hideOnError ? 'true' : 'false'}
+/>
+
+<script is:inline>
+  const bindAssetImageFallbacks = () => {
+    const images = document.querySelectorAll('img[data-asset-image="true"]:not([data-asset-image-bound="true"])');
+
+    images.forEach((image) => {
+      image.dataset.assetImageBound = 'true';
+
+      const handleError = () => {
+        if (image.dataset.assetFallbackApplied === 'true') {
+          image.style.display = 'none';
+          return;
+        }
+
+        const fallbackSrc = image.dataset.fallbackSrc;
+        if (fallbackSrc && image.getAttribute('src') !== fallbackSrc) {
+          image.dataset.assetFallbackApplied = 'true';
+          image.src = fallbackSrc;
+          return;
+        }
+
+        if (image.dataset.hideOnError === 'true') {
+          image.style.display = 'none';
+        }
+      };
+
+      image.addEventListener('error', handleError);
+
+      if (image.complete && image.naturalWidth === 0) {
+        handleError();
+      }
+    });
+  };
+
+  bindAssetImageFallbacks();
+</script>

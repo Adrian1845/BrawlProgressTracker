@@ -1,6 +1,9 @@
 import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel/serverless';
 
-// Define server-side rendering output mode
 export default defineConfig({
-  output: 'server'
+  output: 'server',
+  adapter: vercel({
+    maxDuration: 10
+  })
 });

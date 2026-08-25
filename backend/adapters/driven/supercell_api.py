@@ -7,7 +7,8 @@ from core.models import PlayerDomain
 class SupercellApiAdapter(BrawlStarsClientPort):
     def __init__(self):
         self.base_url = "https://api.brawlstars.com/v1"
-        self.token = os.getenv("BRAWL_STARS_TOKEN", "")
+        self.token = os.getenv("BRAWL_STARS_TOKEN") or os.getenv("BRAWL_API_KEY", "")
+        self.proxy_url = os.getenv("FIXIE_URL") or os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
 
     async def fetch_player_by_tag(self, tag: str) -> PlayerDomain:
         url = f"{self.base_url}/players/%23{tag}"
@@ -16,8 +17,11 @@ class SupercellApiAdapter(BrawlStarsClientPort):
             "Accept": "application/json"
         }
 
-        async with httpx.AsyncClient() as client:
+        client_kwargs = {"proxy": self.proxy_url} if self.proxy_url else {}
+
+        async with httpx.AsyncClient(**client_kwargs) as client:
             try:
+                print(f"Fetching player data for tag: {tag} from Supercell API...")
                 response = await client.get(url, headers=headers, timeout=10.0)
                 
                 if response.status_code == 404:

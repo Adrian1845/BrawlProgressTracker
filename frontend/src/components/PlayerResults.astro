@@ -1,5 +1,7 @@
 ---
-import MetricTracker from './MetricTracker.astro';
+import AssetImage from './AssetImage.astro';
+import BrawlerCatalog from './BrawlerCatalog.astro';
+import ProgressMetricGroupTracker from './ProgressMetricGroupTracker.astro';
 
 interface Gear {
   name: string;
@@ -25,65 +27,159 @@ interface Props {
       tag: string;
       name: string;
       nameColor: string;
+      icon?: { id: number };
       trophies: number;
       highestTrophies: number;
       expLevel: number;
       "3vs3Victories": number;
       soloVictories: number;
       duoVictories: number;
+      rankedRank?: number;
       rankedRankName: string;
-      rankedElo: number;
+      rankedElo?: number;
       club?: { name: string };
       brawlers: Brawler[];
     };
-    metrics: {
-      gold_max: {
-        current: number;
-        total_needed_for_max: number;
-        leftover_needed: number;
-        percentage_completed: number;
+    metrics_v2: {
+      max_level: {
+        count?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        gold?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        pp?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
       };
-      pp_max: {
-        current: number;
-        total_needed_for_max: number;
-        leftover_needed: number;
-        percentage_completed: number;
+      power_11: {
+        count?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        gold?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        pp?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
       };
-      gold_power_11_only: {
-        current: number;
-        total_needed_for_max: number;
-        leftover_needed: number;
-        percentage_completed: number;
+      gadgets: {
+        count?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        gold?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        pp?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
       };
-      pp_power_11_only: {
-        current: number;
-        total_needed_for_max: number;
-        leftover_needed: number;
-        percentage_completed: number;
+      star_powers: {
+        count?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        gold?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        pp?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
       };
-      gears_completion: {
-        current: number;
-        total_needed_for_max: number;
-        leftover_needed: number;
-        percentage_completed: number;
+      gears: {
+        count?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        gold?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        pp?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
       };
-      buffies_gold: {
-        current: number;
-        total_needed_for_max: number;
-        leftover_needed: number;
-        percentage_completed: number;
+      buffies: {
+        count?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        gold?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        pp?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
       };
-      buffies_pp: {
-        current: number;
-        total_needed_for_max: number;
-        leftover_needed: number;
-        percentage_completed: number;
-      };
-      hypercharges_completion: {
-        current: number;
-        total_needed_for_max: number;
-        leftover_needed: number;
-        percentage_completed: number;
+      hypercharges: {
+        count?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        gold?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
+        pp?: {
+          current: number;
+          total_needed_for_max: number;
+          leftover_needed: number;
+          percentage_completed: number;
+        };
       };
     };
   };
@@ -95,15 +191,29 @@ if (!data || !data.profile) {
   return null;
 }
 
-const { profile, metrics } = data;
+const { profile, metrics_v2 } = data;
 const brawlersList = profile.brawlers || [];
 const sortedBrawlers = [...brawlersList].sort((a, b) => b.trophies - a.trophies);
+const profileIconSrc = profile.icon?.id ? `/assets/profile/icons/${profile.icon.id}.png` : '/assets/profile/icons/Unknown.png';
+const rankedTierId = typeof profile.rankedRank === 'number' ? 58000000 + profile.rankedRank - 1 : null;
+const rankedBadgeSrc = rankedTierId !== null ? `/assets/profile/ranked/tiered/${rankedTierId}.png` : '/assets/profile/ranked/regular/Pro.png';
+const rankedBadgeFallback = profile.rankedRankName?.split(' ')[0]
+  ? `/assets/profile/ranked/regular/${profile.rankedRankName.split(' ')[0]}.png`
+  : '/assets/profile/ranked/regular/Pro.png';
 ---
 
 <div class="results-container">
   
   <header class="profile-header" style={`border-color: ${profile.nameColor ? profile.nameColor.replace('0xff', '#') : '#2a2e37'}`}>
-    <div class="avatar-stub">🏆</div>
+    <div class="avatar-stub">
+      <AssetImage
+        src={profileIconSrc}
+        fallbackSrc="/assets/profile/icons/Unknown.png"
+        class="profile-icon"
+        alt={`${profile.name} profile icon`}
+        loading="eager"
+      />
+    </div>
     <div class="profile-title">
       <h2 style={`color: ${profile.nameColor ? profile.nameColor.replace('0xff', '#') : '#fff'}`}>
         {profile.name}
@@ -115,106 +225,74 @@ const sortedBrawlers = [...brawlersList].sort((a, b) => b.trophies - a.trophies)
     </div>
     <div class="rank-badge">
       <span class="lbl">COMPETITIVE</span>
-      <span class="val ranked-text">{profile.rankedRankName}</span>
-      <span class="elo">{profile.rankedElo} ELO</span>
+      <div class="rank-badge-row">
+        <AssetImage
+          src={rankedBadgeSrc}
+          fallbackSrc={rankedBadgeFallback}
+          class="rank-icon"
+          alt={`${profile.rankedRankName ?? 'Rank'} badge`}
+          hideOnError={false}
+        />
+        <div class="rank-badge-copy">
+          <span class="val ranked-text">{profile.rankedRankName ?? 'Unranked'}</span>
+          <span class="elo">{profile.rankedElo?.toLocaleString() ?? '0'} ELO</span>
+        </div>
+      </div>
     </div>
   </header>
 
   <!-- PROGRESSION -->
-  <section class="metrics-card">
-    <!-- 1. Gold left to max -->
-    <MetricTracker 
-      title="Gold left to max" 
-      metric={metrics.gold_max} 
-      iconSrc="/assets/UI/gold.png" 
-      iconAlt="Gold" 
-      barClass="gold-bar" 
-      textClass="text-gold" 
-      investedLabel="Gold Invested:"
+  <section class="progression-grid">
+    <ProgressMetricGroupTracker
+      title="Max Level"
+      metric={metrics_v2.max_level}
+      goldLabel="Gold to Max"
+      ppLabel="Power Points to Max"
     />
-
-    <!-- 2. Power points left to max -->
-    <MetricTracker 
-      title="Power points left to max" 
-      metric={metrics.pp_max} 
-      iconSrc="/assets/UI/power-point.png" 
-      iconAlt="Power Points" 
-      barClass="pp-bar" 
-      textClass="text-purple" 
-      investedLabel="Power Points Invested:"
+    <ProgressMetricGroupTracker
+      title="Power 11"
+      metric={metrics_v2.power_11}
+      countLabel="Power 11 Brawlers"
+      goldLabel="Gold Invested"
+      ppLabel="Power Points Invested"
     />
-
-    <!-- 3. Gold needed for Power 11 only -->
-    <MetricTracker 
-      title="Gold needed for Power 11 only" 
-      metric={metrics.gold_power_11_only} 
-      iconSrc="/assets/UI/gold.png" 
-      iconAlt="Gold" 
-      barClass="gold-bar" 
-      textClass="text-gold" 
-      investedLabel="Gold Invested:"
+    <ProgressMetricGroupTracker
+      title="Gadgets"
+      metric={metrics_v2.gadgets}
+      countLabel="Gadgets Owned"
+      goldLabel="Gold Invested"
     />
-
-    <!-- 4. Power points needed for Power 11 only -->
-    <MetricTracker 
-      title="Power points needed for Power 11 only" 
-      metric={metrics.pp_power_11_only} 
-      iconSrc="/assets/UI/power-point.png" 
-      iconAlt="Power Points" 
-      barClass="pp-bar" 
-      textClass="text-purple" 
-      investedLabel="Power Points Invested:"
+    <ProgressMetricGroupTracker
+      title="Star Powers"
+      metric={metrics_v2.star_powers}
+      countLabel="Star Powers Owned"
+      goldLabel="Gold Invested"
     />
-
-    <!-- 5. Gears completion -->
-    <MetricTracker 
-      title="Gears completion" 
-      metric={metrics.gears_completion} 
-      iconSrc="/assets/UI/gear.png" 
-      iconAlt="Gears" 
-      barClass="gear-bar" 
-      textClass="text-teal" 
-      investedLabel="Gears Owned:"
+    <ProgressMetricGroupTracker
+      title="Gears"
+      metric={metrics_v2.gears}
+      countLabel="Gears Owned"
+      goldLabel="Gold Invested"
     />
-
-    <!-- 6. Buffies Gold -->
-    <MetricTracker 
-      title="Buffies Gold" 
-      metric={metrics.buffies_gold} 
-      iconSrc="/assets/UI/gold.png" 
-      iconAlt="Gold" 
-      barClass="gold-bar" 
-      textClass="text-gold" 
-      investedLabel="Gold Owned/Acquired:"
+    <ProgressMetricGroupTracker
+      title="Buffies"
+      metric={metrics_v2.buffies}
+      countLabel="Buffies Owned"
+      goldLabel="Gold Invested"
+      ppLabel="Power Points Invested"
     />
-
-    <!-- 7. Buffies Power Points -->
-    <MetricTracker 
-      title="Buffies Power Points" 
-      metric={metrics.buffies_pp} 
-      iconSrc="/assets/UI/power-point.png" 
-      iconAlt="Power Points" 
-      barClass="pp-bar" 
-      textClass="text-purple" 
-      investedLabel="Power Points Owned:"
-    />
-
-    <!-- 8. Hypercharges completion -->
-    <MetricTracker 
-      title="Hypercharges completion" 
-      metric={metrics.hypercharges_completion} 
-      iconSrc="/assets/UI/hypercharge.png" 
-      iconAlt="Hypercharges" 
-      barClass="hypercharge-bar" 
-      textClass="text-pink" 
-      investedLabel="Hypercharges Owned:"
+    <ProgressMetricGroupTracker
+      title="Hypercharges"
+      metric={metrics_v2.hypercharges}
+      countLabel="Hypercharges Owned"
+      goldLabel="Gold Invested"
     />
   </section>
 
   <!-- GLOBAL STATS -->
   <section class="stats-grid">
   <div class="stat-card">
-    <img src="/assets/UI/trophy.png" class="asset-icon-card" alt="Trophies" />
+    <AssetImage src="/assets/UI/trophy.png" class="asset-icon-card" alt="Trophies" />
     <div class="stat-info">
       <span class="stat-label">Current Trophies</span>
       <span class="stat-value">{profile.trophies.toLocaleString()}</span>
@@ -236,48 +314,13 @@ const sortedBrawlers = [...brawlersList].sort((a, b) => b.trophies - a.trophies)
     </div>
   </section>
 
-  <!-- BRAWLERS CATALOG -->
-  <section class="brawlers-section">
-    <div class="section-title-wrapper">
-      <h3>👥 Brawlers Catalog</h3>
-      <span class="count-tag">{brawlersList.length} Unlocked</span>
-    </div>
-    
-    <div class="brawlers-grid">
-      {sortedBrawlers.map((brawler) => (
-        <div class="brawler-card">
-          <div class="brawler-header">
-            <img 
-              src={`/assets/brawlers/${brawler.id}.png`} 
-              alt={brawler.name}
-              class="brawler-avatar"
-              loading="lazy"
-              onerror="this.onerror=null; this.src='https://cdn.brawlify.com/brawlers/borderless/' + this.dataset.id + '.png';"
-              data-id={brawler.id}
-            />
-            <div class="brawler-title-group">
-              <span class="brawler-name">{brawler.name}</span>
-              <span class="brawler-power">Power {brawler.power}</span>
-            </div>
-            <span class="brawler-rank">R {brawler.rank}</span>
-          </div>
-          
-          <div class="brawler-stats">
-            <div class="stat">
-              <img src="/assets/UI/trophy.png" class="asset-icon-mini" alt="Trophies" onerror="this.style.display='none'" />
-              <span class="brawler-trophies">{brawler.trophies}</span>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </section>
+  <BrawlerCatalog brawlers={sortedBrawlers} totalCount={brawlersList.length} />
 </div>
 
 <style>
   .results-container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1360px;
     margin: 2rem auto;
     display: flex;
     flex-direction: column;
@@ -299,13 +342,25 @@ const sortedBrawlers = [...brawlersList].sort((a, b) => b.trophies - a.trophies)
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    flex-wrap: wrap;
   }
 
   .avatar-stub {
-    font-size: 2.2rem;
     background: #101216;
     padding: 0.5rem;
     border-radius: 12px;
+    width: 72px;
+    height: 72px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+
+  .profile-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
   }
 
   .profile-title h2 {
@@ -338,9 +393,9 @@ const sortedBrawlers = [...brawlersList].sort((a, b) => b.trophies - a.trophies)
     border: 1px solid #2a2e37;
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    text-align: right;
     display: flex;
     flex-direction: column;
+    min-width: 180px;
   }
 
   .rank-badge .lbl { font-size: 0.65rem; color: #888; }
@@ -348,29 +403,33 @@ const sortedBrawlers = [...brawlersList].sort((a, b) => b.trophies - a.trophies)
   .rank-badge .elo { font-size: 0.8rem; color: #fec325; font-weight: bold; }
   .ranked-text { color: #e03e3e; }
 
+  .rank-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .rank-icon {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    flex: none;
+  }
+
+  .rank-badge-copy {
+    display: flex;
+    flex-direction: column;
+  }
+
   /* Progression Module */
   .metrics-card {
-    background: #1b1f27;
-    border: 1px solid #2a2e37;
-    padding: 1.5rem;
-    border-radius: 16px;
+    display: none;
   }
 
-  .metrics-card h3 { margin: 0 0 1rem 0; color: #fff; font-size: 1.2rem; }
-  
-  .metric-block {
-    margin-bottom: 2rem;
-  }
-  
-  .metric-block:last-child {
-    margin-bottom: 0;
-  }
-
-  .metric-block h3 {
-    margin: 0 0 0.75rem 0;
-    color: #fff;
-    font-size: 1.1rem;
-    font-weight: 600;
+  .progression-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
   }
 
   /* Variaciones de colores de texto */
@@ -413,109 +472,52 @@ const sortedBrawlers = [...brawlersList].sort((a, b) => b.trophies - a.trophies)
   .stat-label { font-size: 0.85rem; color: #888; }
   .stat-value { font-size: 1.3rem; font-weight: bold; color: #fff; }
 
-  /* Catalog Section */
-  .brawlers-section { margin-top: 1rem; }
-  
-  .section-title-wrapper {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .brawlers-section h3 {
-    color: #fff; font-size: 1.3rem; margin: 0;
-    border-left: 4px solid #fec325; padding-left: 0.5rem;
-  }
-  
-  .count-tag { background: #2a2e37; color: #eee; padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.85rem; }
-
-  .brawlers-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 0.75rem;
-  }
-
-  .brawler-card {
-    background: #1b1f27;
-    border: 1px solid #2a2e37;
-    border-radius: 12px;
-    padding: 0.85rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-  }
-
-  .brawler-card:hover {
-    border-color: #fec325;
-  }
-
-  .brawler-card:hover .brawler-avatar {
-    transform: scale(1.05);
-    border-color: #fec325;
-  }
-
-  .brawler-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    width: 100%;
-  }
-
-  .brawler-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
-    background: #101216;
-    border: 2px solid #2a2e37;
-    object-fit: cover;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-  }
-
-  .brawler-title-group {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-  }
-
-  .brawler-name { font-weight: bold; color: #fff; font-size: 1rem; }
-  .brawler-power { font-size: 0.75rem; color: #888; }
-  .brawler-rank { font-size: 0.75rem; background: #e03e3e; color: #fff; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: bold; }
-  
-  .brawler-stats {
-    display: flex;
-    align-items: center;
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
-  }
-
-  .stat {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-
-  .brawler-trophies { color: #fec325; font-weight: bold; }
-
-  /* Progress Bars */
-  .progress-bar-container { background: #101216; height: 5px; border-radius: 3px; width: 100%; overflow: hidden; }
-  .progress-bar-container.large { height: 10px; border-radius: 5px; }
-  .progress-bar { background: #4a90e2; height: 100%; transition: width 0.3s; }
-  .gold-bar { background: linear-gradient(90deg, #fec325, #ff9f43); }
-
-  /* Asset Icons */
-  .asset-icon-mini {
-    width: 20px;
-    height: 20px;
-    vertical-align: middle;
-    margin-left: 4px;
-    object-fit: contain;
-  }
-
   .asset-icon-card {
     width: 40px;
     height: 40px;
     object-fit: contain;
   }
+
+  @media (max-width: 900px) {
+    .results-container {
+      margin: 1rem auto 0;
+    }
+
+    .profile-header {
+      padding: 1rem;
+      gap: 1rem;
+    }
+
+    .profile-title h2 {
+      font-size: 1.45rem;
+    }
+
+    .rank-badge {
+      margin-left: 0;
+      width: 100%;
+    }
+
+    .rank-badge-row {
+      width: 100%;
+    }
+
+    .progression-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (min-width: 1600px) {
+    .progression-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
 </style>

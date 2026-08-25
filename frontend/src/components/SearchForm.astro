@@ -14,7 +14,8 @@ const { searchTag, errorMessage } = Astro.props;
         id="tag" 
         placeholder="e.g. QJY2R0V" 
         value={searchTag ? `#${searchTag}` : ""} 
-        required 
+        required
+        maxlength="10"
       />
       <button type="button" id="search-btn">SEARCH</button>
     </div>
@@ -39,9 +40,6 @@ const { searchTag, errorMessage } = Astro.props;
     
     // Supercell Font Correction Matrix (Replaces common font mistranslations)
     value = value.replace(/O/g, '0');
-    value = value.replace(/I/g, '1');
-    value = value.replace(/S/g, '5');
-    value = value.replace(/Z/g, '2');
     
     if (value) {
       window.location.href = `/?tag=${encodeURIComponent(value)}`;
@@ -64,8 +62,8 @@ const { searchTag, errorMessage } = Astro.props;
     border-radius: 16px;
     border: 1px solid #2a2e37;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    width: 100%;
-    max-width: 500px;
+    width: min(100%, 640px);
+    margin-inline: auto;
     box-sizing: border-box;
   }
   label {
@@ -119,5 +117,24 @@ const { searchTag, errorMessage } = Astro.props;
     margin-top: 1rem;
     font-size: 0.9rem;
     text-align: center;
+  }
+
+  @media (max-width: 640px) {
+    .search-card {
+      padding: 1.25rem;
+    }
+
+    .form-group {
+      flex-direction: column;
+    }
+
+    input[type="text"],
+    button {
+      width: 100%;
+    }
+
+    button {
+      padding-inline: 1rem;
+    }
   }
 </style>

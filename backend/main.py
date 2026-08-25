@@ -1,5 +1,5 @@
-import os
 from pathlib import Path
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -18,11 +18,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
+def _read_cors_origins() -> list[str]:
+    raw_origins = os.getenv("CORS_ORIGINS", "")
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    if origins:
+        return origins
+    return ["http://localhost:4321", "http://127.0.0.1:4321"]
+
 # Enable CORS configurations
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4321", "http://127.0.0.1:4321"],
-    allow_credentials=True,
+    allow_origins=_read_cors_origins(),
+    allow_origin_regex=os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app"),
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

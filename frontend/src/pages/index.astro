@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import SearchForm from '../components/SearchForm.astro';
 import PlayerResults from '../components/PlayerResults.astro';
+import { API_BASE_URL } from '../config';
 
 let playerData = null;
 let errorMessage = "";
@@ -11,7 +12,7 @@ const searchTag = rawTag.startsWith("#") ? rawTag.slice(1) : rawTag;
 
 if (searchTag) {
   try {
-    const response = await fetch(`http://127.0.0.1:8000/api/player/${searchTag}`);
+    const response = await fetch(`${API_BASE_URL}/api/player/${searchTag}`);
     
     if (!response.ok) {
       errorMessage = response.status === 404 
@@ -28,12 +29,34 @@ if (searchTag) {
 ---
 
 <Layout title="Brawl Progress Tracker">
-  <header style="text-align: center; margin-bottom: 2rem;">
-    <h1 style="color: var(--accent); font-size: 2.5rem; margin: 0; text-transform: uppercase;">Brawl Tracker</h1>
-    <p style="color: var(--text-muted); margin: 0.5rem 0 0 0;">Progression Analyst</p>
-  </header>
+  <main class="page-shell">
+    <header class="page-hero">
+      <h1>Brawl Tracker</h1>
+      <p>Progression Analyst</p>
+    </header>
 
-  <SearchForm searchTag={searchTag} errorMessage={errorMessage} />
+    <SearchForm searchTag={searchTag} errorMessage={errorMessage} />
 
-  {playerData && <PlayerResults data={playerData} />}
+    {playerData && <PlayerResults data={playerData} />}
+  </main>
 </Layout>
+
+<style>
+  .page-hero {
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-hero h1 {
+    color: var(--accent);
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .page-hero p {
+    color: var(--text-muted);
+    margin: 0.5rem 0 0;
+  }
+</style>
