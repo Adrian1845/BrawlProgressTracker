@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import SearchForm from '../components/SearchForm.astro';
 import PlayerResults from '../components/PlayerResults.astro';
+import { API_BASE_URL } from '../config';
 
 let playerData = null;
 let errorMessage = "";
@@ -11,7 +12,7 @@ const searchTag = rawTag.startsWith("#") ? rawTag.slice(1) : rawTag;
 
 if (searchTag) {
   try {
-    const response = await fetch(`http://127.0.0.1:8000/api/player/${searchTag}`);
+    const response = await fetch(`${API_BASE_URL}/api/player/${searchTag}`);
     
     if (!response.ok) {
       errorMessage = response.status === 404 
