@@ -1,0 +1,314 @@
+---
+import AssetImage from './AssetImage.astro';
+
+interface Brawler {
+  id: number;
+  name: string;
+  power: number;
+  rank: number;
+  trophies: number;
+}
+
+interface Props {
+  brawlers: Brawler[];
+  totalCount: number;
+}
+
+const { brawlers, totalCount } = Astro.props;
+---
+
+<section class="brawlers-section">
+  <div class="section-title-wrapper">
+    <div class="section-title-copy">
+      <h3>👥 Brawlers Catalog</h3>
+      <span class="count-tag" id="brawler-count">{totalCount} Unlocked</span>
+    </div>
+    <div class="catalog-controls" aria-label="Brawler catalog filters">
+      <label class="filter-label" for="brawler-search">Search</label>
+      <input
+        id="brawler-search"
+        class="catalog-input"
+        type="search"
+        placeholder="Search brawlers"
+        autocomplete="off"
+      />
+      <label class="filter-label" for="brawler-sort">Sort by</label>
+      <select id="brawler-sort" class="catalog-select" aria-label="Sort brawlers">
+        <option value="trophies">Trophies</option>
+        <option value="power">Power</option>
+        <option value="rank">Rank</option>
+      </select>
+    </div>
+  </div>
+
+  <p class="catalog-empty" id="brawler-empty" hidden>No brawlers match your search.</p>
+
+  <div class="brawlers-grid" id="brawlers-grid">
+    {brawlers.map((brawler, index) => (
+      <div
+        class="brawler-card"
+        data-brawler-card
+        data-name={brawler.name.toLowerCase()}
+        data-power={brawler.power}
+        data-trophies={brawler.trophies}
+        data-rank={brawler.rank}
+        data-original-index={index}
+      >
+        <div class="brawler-header">
+          <AssetImage
+            src={`/assets/brawlers/${brawler.id}.png`}
+            alt={brawler.name}
+            class="brawler-avatar"
+            loading="lazy"
+            fallbackSrc={`https://cdn.brawlify.com/brawlers/borderless/${brawler.id}.png`}
+          />
+          <div class="brawler-title-group">
+            <span class="brawler-name">{brawler.name}</span>
+            <span class="brawler-power">Power {brawler.power}</span>
+          </div>
+          <span class="brawler-rank">R {brawler.rank}</span>
+        </div>
+
+        <div class="brawler-stats">
+          <div class="stat">
+            <AssetImage src="/assets/UI/trophy.png" class="asset-icon-mini" alt="Trophies" />
+            <span class="brawler-trophies">{brawler.trophies}</span>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<script is:inline>
+  const searchInput = document.getElementById('brawler-search');
+  const sortSelect = document.getElementById('brawler-sort');
+  const grid = document.getElementById('brawlers-grid');
+  const countTag = document.getElementById('brawler-count');
+  const emptyState = document.getElementById('brawler-empty');
+
+  if (searchInput && sortSelect && grid && countTag && emptyState) {
+    const cards = Array.from(grid.querySelectorAll('[data-brawler-card]'));
+
+    const sortCardValues = {
+      trophies: (card) => Number(card.dataset.trophies ?? 0),
+      power: (card) => Number(card.dataset.power ?? 0),
+      rank: (card) => Number(card.dataset.rank ?? 0),
+    };
+
+    const renderCards = () => {
+      const query = searchInput.value.trim().toLowerCase();
+      const sortBy = sortSelect.value;
+
+      const visibleCards = cards.filter((card) => {
+        const name = card.dataset.name ?? '';
+        const matchesQuery = !query || name.includes(query);
+        card.hidden = !matchesQuery;
+        card.toggleAttribute('aria-hidden', !matchesQuery);
+        card.classList.toggle('is-hidden', !matchesQuery);
+        return matchesQuery;
+      });
+
+      visibleCards.sort((a, b) => {
+        const aValue = sortCardValues[sortBy](a);
+        const bValue = sortCardValues[sortBy](b);
+        if (bValue !== aValue) {
+          return bValue - aValue;
+        }
+
+        return Number(a.dataset.originalIndex ?? 0) - Number(b.dataset.originalIndex ?? 0);
+      });
+
+      visibleCards.forEach((card) => grid.appendChild(card));
+      countTag.textContent =
+        visibleCards.length === cards.length
+          ? `${cards.length} Unlocked`
+          : `${visibleCards.length} / ${cards.length} Shown`;
+      emptyState.hidden = visibleCards.length > 0;
+    };
+
+    searchInput.addEventListener('input', renderCards);
+    sortSelect.addEventListener('change', renderCards);
+    renderCards();
+  }
+</script>
+
+<style>
+  .brawlers-section { margin-top: 1rem; }
+
+  .section-title-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .section-title-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .brawlers-section h3 {
+    color: #fff;
+    font-size: 1.3rem;
+    margin: 0;
+    border-left: 4px solid #fec325;
+    padding-left: 0.5rem;
+  }
+
+  .count-tag {
+    background: #2a2e37;
+    color: #eee;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+  }
+
+  .catalog-controls {
+    display: grid;
+    grid-template-columns: auto minmax(180px, 240px) auto minmax(160px, 180px);
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .filter-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .catalog-input,
+  .catalog-select {
+    width: 100%;
+    background: #101216;
+    border: 1px solid #2a2e37;
+    color: #fff;
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.95rem;
+  }
+
+  .catalog-input:focus,
+  .catalog-select:focus {
+    outline: none;
+    border-color: #fec325;
+    box-shadow: 0 0 0 3px rgba(254, 195, 37, 0.15);
+  }
+
+  .catalog-empty {
+    margin: 0 0 0.85rem 0;
+    color: #888;
+    font-size: 0.95rem;
+  }
+
+  .brawlers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .brawler-card {
+    background: #1b1f27;
+    border: 1px solid #2a2e37;
+    border-radius: 12px;
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .brawler-card.is-hidden {
+    display: none;
+  }
+
+  .brawler-card:hover {
+    border-color: #fec325;
+  }
+
+  .brawler-card:hover .brawler-avatar {
+    transform: scale(1.05);
+    border-color: #fec325;
+  }
+
+  .brawler-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .brawler-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: #101216;
+    border: 2px solid #2a2e37;
+    object-fit: cover;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .brawler-title-group {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .brawler-name { font-weight: bold; color: #fff; font-size: 1rem; }
+  .brawler-power { font-size: 0.75rem; color: #888; }
+  .brawler-rank { font-size: 0.75rem; background: #e03e3e; color: #fff; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: bold; }
+
+  .brawler-stats {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .brawler-trophies { color: #fec325; font-weight: bold; }
+
+  .asset-icon-mini {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    margin-left: 4px;
+    object-fit: contain;
+  }
+
+  @media (max-width: 720px) {
+    .section-title-wrapper {
+      align-items: stretch;
+    }
+
+    .catalog-controls {
+      grid-template-columns: 1fr;
+      max-width: none;
+    }
+
+    .brawlers-grid {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+  }
+
+  @media (min-width: 1600px) {
+    .catalog-controls {
+      max-width: 780px;
+    }
+
+    .brawlers-grid {
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+  }
+</style>

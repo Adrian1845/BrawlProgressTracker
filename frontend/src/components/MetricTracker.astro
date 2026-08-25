@@ -1,4 +1,6 @@
 ---
+import AssetImage from './AssetImage.astro';
+
 interface MetricData {
   current: number;
   total_needed_for_max: number;
@@ -35,14 +37,14 @@ const {
         <span class="label">{investedLabel}</span>
         <span class={`value ${textClass}`}>
           {metric.current.toLocaleString()} 
-          <img src={iconSrc} class="asset-icon-mini" alt={iconAlt} onerror="this.style.display='none'" />
+          <AssetImage src={iconSrc} class="asset-icon-mini" alt={iconAlt} />
         </span>
       </div>
       <div>
         <span class="label">Remaining to Max:</span>
         <span class="value text-needed">
           {metric.leftover_needed.toLocaleString()} 
-          <img src={iconSrc} class="asset-icon-mini" alt={`${iconAlt} Needed`} onerror="this.style.display='none'" />
+          <AssetImage src={iconSrc} class="asset-icon-mini" alt={`${iconAlt} Needed`} />
         </span>
       </div>
       <div>

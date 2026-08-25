@@ -18,6 +18,7 @@ class SupercellApiAdapter(BrawlStarsClientPort):
 
         async with httpx.AsyncClient() as client:
             try:
+                print(f"Fetching player data for tag: {tag} from Supercell API...")
                 response = await client.get(url, headers=headers, timeout=10.0)
                 
                 if response.status_code == 404:
