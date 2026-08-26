@@ -9,8 +9,9 @@ const apiBaseUrl = API_BASE_URL;
 <Layout title="Brawl Progress Tracker">
   <main class="page-shell tracker-shell">
     <header class="page-hero">
+      <p class="eyebrow">Progression Analyst</p>
       <h1>Brawl Tracker</h1>
-      <p>Progression Analyst</p>
+      <p class="hero-copy">Track player progress, ranked status, and the full brawler roster in one view.</p>
     </header>
 
     <SearchForm />
@@ -244,98 +245,99 @@ const apiBaseUrl = API_BASE_URL;
 
     resultsRoot.innerHTML = `
       <div class="results-container">
-        <header class="profile-header" style="border-color: ${borderColor}">
-          <div class="avatar-stub">
-            <img
-              src="${profileIconSrc(profile)}"
-              class="profile-icon"
-              alt="${escapeHtml(profile.name)} profile icon"
-              loading="eager"
-              data-fallback="/assets/profile/icons/Unknown.png"
-            />
-          </div>
-          <div class="profile-title">
-            <h2 style="color: ${titleColor}">${escapeHtml(profile.name)}</h2>
-            <div class="sub-badges">
-              <span class="player-tag">${escapeHtml(profile.tag)}</span>
-              ${profile.club?.name ? `<span class="club-badge">🦎 ${escapeHtml(profile.club.name)}</span>` : ''}
-            </div>
-          </div>
-          <div class="rank-badge">
-            <span class="lbl">COMPETITIVE</span>
-            <div class="rank-badge-row">
-              <img
-                src="${rankedBadgeSrc(profile)}"
-                class="rank-icon"
-                alt="${escapeHtml(rankText)} badge"
-                data-fallback="${rankedBadgeFallback(profile)}"
-              />
-              <div class="rank-badge-copy">
-                <span class="val ranked-text">${escapeHtml(rankText)}</span>
-                <span class="elo">${rankedElo} ELO</span>
+        <div class="dashboard-grid">
+          <div class="dashboard-column dashboard-column-left">
+            <header class="profile-header" style="border-color: ${borderColor}">
+              <div class="profile-main">
+                <div class="avatar-stub">
+                  <img
+                    src="${profileIconSrc(profile)}"
+                    class="profile-icon"
+                    alt="${escapeHtml(profile.name)} profile icon"
+                    loading="eager"
+                    data-fallback="/assets/profile/icons/Unknown.png"
+                  />
+                </div>
+                <div class="profile-copy">
+                  <div class="profile-title">
+                    <h2 style="color: ${titleColor}">${escapeHtml(profile.name)}</h2>
+                    <div class="sub-badges">
+                      <span class="player-tag">${escapeHtml(profile.tag)}</span>
+                      ${profile.club?.name ? `<span class="club-badge">🦎 ${escapeHtml(profile.club.name)}</span>` : ''}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </header>
+              <div class="rank-badge">
+                <span class="lbl">COMPETITIVE</span>
+                <div class="rank-badge-row">
+                  <img
+                    src="${rankedBadgeSrc(profile)}"
+                    class="rank-icon"
+                    alt="${escapeHtml(rankText)} badge"
+                    data-fallback="${rankedBadgeFallback(profile)}"
+                  />
+                  <div class="rank-badge-copy">
+                    <span class="val ranked-text">${escapeHtml(rankText)}</span>
+                    <span class="elo">${rankedElo} ELO</span>
+                  </div>
+                </div>
+              </div>
 
-        <section class="progression-grid">
-          ${renderMetricGroup('Max Level', metrics.max_level, {
-            goldLabel: 'Gold to Max',
-            ppLabel: 'Power Points to Max'
-          })}
-          ${renderMetricGroup('Power 11', metrics.power_11, {
-            countLabel: 'Power 11 Brawlers',
-            goldLabel: 'Gold Invested',
-            ppLabel: 'Power Points Invested'
-          })}
-          ${renderMetricGroup('Gadgets', metrics.gadgets, {
-            countLabel: 'Gadgets Owned',
-            goldLabel: 'Gold Invested'
-          })}
-          ${renderMetricGroup('Star Powers', metrics.star_powers, {
-            countLabel: 'Star Powers Owned',
-            goldLabel: 'Gold Invested'
-          })}
-          ${renderMetricGroup('Gears', metrics.gears, {
-            countLabel: 'Gears Owned',
-            goldLabel: 'Gold Invested'
-          })}
-          ${renderMetricGroup('Buffies', metrics.buffies, {
-            countLabel: 'Buffies Owned',
-            goldLabel: 'Gold Invested',
-            ppLabel: 'Power Points Invested'
-          })}
-          ${renderMetricGroup('Hypercharges', metrics.hypercharges, {
-            countLabel: 'Hypercharges Owned',
-            goldLabel: 'Gold Invested'
-          })}
-        </section>
+              <div class="profile-metrics">
+                <div class="profile-metric">
+                  <span class="profile-metric-label">Current Trophies</span>
+                  <span class="profile-metric-value">${formatNumber(profile.trophies)}</span>
+                </div>
+                <div class="profile-metric">
+                  <span class="profile-metric-label">Trophy Record</span>
+                  <span class="profile-metric-value">${formatNumber(profile.highestTrophies)}</span>
+                </div>
+                <div class="profile-metric">
+                  <span class="profile-metric-label">3vs3 Victories</span>
+                  <span class="profile-metric-value">${formatNumber(profile['3vs3Victories'])}</span>
+                </div>
+              </div>
+            </header>
+          </div>
 
-        <section class="stats-grid">
-          <div class="stat-card">
-            <img src="/assets/UI/trophy.png" class="asset-icon-card" alt="Trophies" />
-            <div class="stat-info">
-              <span class="stat-label">Current Trophies</span>
-              <span class="stat-value">${formatNumber(profile.trophies)}</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <span class="stat-icon">🔥</span>
-            <div class="stat-info">
-              <span class="stat-label">Trophy Record</span>
-              <span class="stat-value">${formatNumber(profile.highestTrophies)}</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <span class="stat-icon">⚔️</span>
-            <div class="stat-info">
-              <span class="stat-label">3vs3 Victories</span>
-              <span class="stat-value">${formatNumber(profile['3vs3Victories'])}</span>
-            </div>
-          </div>
-        </section>
+          <div class="dashboard-column dashboard-column-right">
+            <section class="progression-grid">
+              ${renderMetricGroup('Max Level', metrics.max_level, {
+                goldLabel: 'Gold to Max',
+                ppLabel: 'Power Points to Max'
+              })}
+              ${renderMetricGroup('Power 11', metrics.power_11, {
+                countLabel: 'Power 11 Brawlers',
+                goldLabel: 'Gold Invested',
+                ppLabel: 'Power Points Invested'
+              })}
+              ${renderMetricGroup('Gadgets', metrics.gadgets, {
+                countLabel: 'Gadgets Owned',
+                goldLabel: 'Gold Invested'
+              })}
+              ${renderMetricGroup('Star Powers', metrics.star_powers, {
+                countLabel: 'Star Powers Owned',
+                goldLabel: 'Gold Invested'
+              })}
+              ${renderMetricGroup('Gears', metrics.gears, {
+                countLabel: 'Gears Owned',
+                goldLabel: 'Gold Invested'
+              })}
+              ${renderMetricGroup('Buffies', metrics.buffies, {
+                countLabel: 'Buffies Owned',
+                goldLabel: 'Gold Invested',
+                ppLabel: 'Power Points Invested'
+              })}
+              ${renderMetricGroup('Hypercharges', metrics.hypercharges, {
+                countLabel: 'Hypercharges Owned',
+                goldLabel: 'Gold Invested'
+              })}
+            </section>
 
-        ${renderCatalog(brawlers)}
+            ${renderCatalog(brawlers)}
+          </div>
+        </div>
       </div>
     `;
 
@@ -561,40 +563,59 @@ const apiBaseUrl = API_BASE_URL;
 
   .page-hero {
     text-align: center;
-    margin-bottom: 0.25rem;
+    margin: 0 auto 0.5rem;
+    width: min(100%, 720px);
+  }
+
+  .eyebrow {
+    margin: 0 0 0.35rem;
+    color: #8a8f98;
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
   }
 
   .page-hero h1 {
     color: var(--accent);
-    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-size: clamp(2.4rem, 5vw, 3.75rem);
     margin: 0;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
+    line-height: 0.95;
   }
 
-  .page-hero p {
+  .hero-copy {
     color: var(--text-muted);
-    margin: 0.5rem 0 0;
+    margin: 0.85rem auto 0;
+    max-width: 52ch;
+    line-height: 1.5;
   }
 
   .status-banner {
-    width: min(100%, 640px);
+    width: min(100%, 720px);
     margin: 0 auto;
     text-align: center;
-    color: var(--text-muted);
-    font-size: 0.95rem;
+    color: #d8dde6;
+    font-size: 0.92rem;
+    background: rgba(27, 31, 39, 0.7);
+    border: 1px solid #2a2e37;
+    border-radius: 999px;
+    padding: 0.7rem 1rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
   }
 
   .results-root {
     width: 100%;
+    display: flex;
+    justify-content: center;
   }
 
   .empty-state {
-    width: min(100%, 640px);
+    width: min(100%, 840px);
     margin: 0 auto;
-    background: rgba(26, 29, 36, 0.8);
+    background: linear-gradient(180deg, rgba(27, 31, 39, 0.95), rgba(19, 21, 26, 0.92));
     border: 1px solid #2a2e37;
-    border-radius: 16px;
+    border-radius: 24px;
     padding: 1.5rem;
     color: var(--text-muted);
     text-align: center;
@@ -602,12 +623,26 @@ const apiBaseUrl = API_BASE_URL;
 
   .results-container {
     width: 100%;
-    max-width: 1360px;
+    max-width: 1200px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.15rem;
     animation: fadeIn 0.25s ease-out;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .dashboard-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
   }
 
   @keyframes fadeIn {
@@ -623,25 +658,35 @@ const apiBaseUrl = API_BASE_URL;
   }
 
   .profile-header {
-    background: #1b1f27;
-    border: 2px solid #2a2e37;
-    padding: 1.5rem;
-    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(27, 31, 39, 0.98), rgba(21, 24, 30, 0.98));
+    border: 1px solid #2a2e37;
+    padding: 1rem;
+    border-radius: 24px;
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
+    gap: 1rem;
+    flex-wrap: nowrap;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
+  }
+
+  .profile-main {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .avatar-stub {
     background: #101216;
-    padding: 0.5rem;
-    border-radius: 12px;
-    width: 72px;
-    height: 72px;
+    padding: 0.45rem;
+    border-radius: 18px;
+    width: 96px;
+    height: 96px;
     display: grid;
     place-items: center;
     overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   }
 
   .profile-icon {
@@ -653,12 +698,18 @@ const apiBaseUrl = API_BASE_URL;
 
   .profile-title h2 {
     margin: 0 0 0.25rem 0;
-    font-size: 1.8rem;
+    font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+    line-height: 1;
+  }
+
+  .profile-copy {
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .sub-badges {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.45rem;
     align-items: center;
     flex-wrap: wrap;
   }
@@ -677,14 +728,16 @@ const apiBaseUrl = API_BASE_URL;
   }
 
   .rank-badge {
-    margin-left: auto;
     background: #101216;
     border: 1px solid #2a2e37;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+    border-radius: 18px;
     display: flex;
     flex-direction: column;
-    min-width: 180px;
+    min-width: 185px;
+    flex: 0 0 185px;
+    justify-self: end;
+    align-self: center;
   }
 
   .rank-badge .lbl {
@@ -710,12 +763,12 @@ const apiBaseUrl = API_BASE_URL;
   .rank-badge-row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.7rem;
   }
 
   .rank-icon {
-    width: 52px;
-    height: 52px;
+    width: 50px;
+    height: 50px;
     object-fit: contain;
     flex: none;
   }
@@ -723,11 +776,12 @@ const apiBaseUrl = API_BASE_URL;
   .rank-badge-copy {
     display: flex;
     flex-direction: column;
+    gap: 0.1rem;
   }
 
   .progression-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: 1fr;
     gap: 1rem;
   }
 
@@ -826,7 +880,7 @@ const apiBaseUrl = API_BASE_URL;
 
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: 1fr;
     gap: 1rem;
   }
 
@@ -867,7 +921,11 @@ const apiBaseUrl = API_BASE_URL;
   }
 
   .brawlers-section {
-    margin-top: 1rem;
+    margin-top: 0;
+    background: rgba(27, 31, 39, 0.82);
+    border: 1px solid #2a2e37;
+    border-radius: 24px;
+    padding: 1.25rem;
   }
 
   .section-title-wrapper {
@@ -1047,18 +1105,34 @@ const apiBaseUrl = API_BASE_URL;
       margin: 1rem auto 0;
     }
 
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+
     .profile-header {
-      padding: 1rem;
-      gap: 1rem;
+      padding: 0.9rem;
+    }
+
+    .profile-main {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .avatar-stub {
+      width: 88px;
+      height: 88px;
+      border-radius: 18px;
     }
 
     .profile-title h2 {
-      font-size: 1.45rem;
+      font-size: 1.35rem;
     }
 
     .rank-badge {
-      margin-left: 0;
       width: 100%;
+      max-width: 100%;
+      flex: 1 1 100%;
+      justify-self: stretch;
     }
 
     .rank-badge-row {
@@ -1075,6 +1149,19 @@ const apiBaseUrl = API_BASE_URL;
   }
 
   @media (max-width: 720px) {
+    .page-hero {
+      width: 100%;
+    }
+
+    .page-hero h1 {
+      font-size: clamp(2rem, 11vw, 2.85rem);
+    }
+
+    .status-banner {
+      font-size: 0.85rem;
+      padding-inline: 0.85rem;
+    }
+
     .section-title-wrapper {
       align-items: stretch;
     }
@@ -1087,9 +1174,53 @@ const apiBaseUrl = API_BASE_URL;
     .brawlers-grid {
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .profile-main {
+      justify-content: center;
+      text-align: center;
+    }
+
+    .profile-title {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .profile-copy {
+      width: 100%;
+    }
+
+    .sub-badges {
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .profile-header {
+      flex-wrap: wrap;
+    }
+
+    .profile-main {
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .profile-title {
+      align-items: center;
+    }
   }
 
   @media (min-width: 1600px) {
+    .dashboard-grid {
+      grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+    }
+
     .progression-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
